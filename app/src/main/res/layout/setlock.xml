@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical" android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <ViewFlipper
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:id="@+id/viewFlipper"
+        android:animateFirstView="false" >
+
+        <include
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:id="@+id/first"
+            layout="@layout/recordview" />
+
+        <include
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:id="@+id/second"
+            layout="@layout/nextview" />
+
+        <include
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:id="@+id/third"
+            layout="@layout/recordview" />
+
+        <include
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:id="@+id/forth"
+            layout="@layout/completeview" />
+    </ViewFlipper>
+</LinearLayout>

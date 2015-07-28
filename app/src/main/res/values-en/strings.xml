@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Lock</string>
+    <string name="action_settings">Settings</string>
+    <string name="cancel">cancel</string>
+    <string name="hello_world">Hello world!</string>
+    <string name="next">next</string>
+    <string name="next_hint">First step had been done, hit the button to continue</string>
+    <string name="processing">processing</string>
+    <string name="push_speak">push the button while speaking</string>
+    <string name="record_hints">Please push the button and close to the mic while reading the number</string>
+    <string name="recording">recording...</string>
+    <string name="reset_lock">reset the lock</string>
+    <string name="try_unlock">try to unlock</string>
+    <string name="confirm">confirm</string>
+    <string name="no_speech">Didn\'t detect the speech</string>
+    <string name="not_the_same">The speech was different from the first one, please record again</string>
+    <string name="set_complete">The lock has been set</string>
+    <string name="unlock_hints">Need to confirm your voice,please read the number</string>
+    <string name="set_lock">set the lock</string>
+    <string name="unlock_fail">Can\'t recognize</string>
+    <string name="unlock_sucess">unlock sucess</string>
+
+</resources>
