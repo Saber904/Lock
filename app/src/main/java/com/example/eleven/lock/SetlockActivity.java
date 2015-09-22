@@ -4,34 +4,26 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.media.AudioFormat;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Message;
+import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ViewFlipper;
 
 import com.example.eleven.speechlibrary.DTWrecognize;
-import com.example.eleven.speechlibrary.MFCC;
-import com.example.eleven.speechlibrary.Preprocess;
 import com.example.eleven.speechlibrary.Recorder;
 
 import java.io.BufferedOutputStream;
 import java.io.DataOutputStream;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.lang.ref.WeakReference;
-import java.util.ArrayList;
-import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
+
+import lock.util.DataProcess;
 
 
 /**
@@ -48,15 +40,10 @@ public class SetlockActivity extends Activity{
 
     private Recorder recorder;
 
-    static final int frequency = 22050;
-    static final int channelConfiguration = AudioFormat.CHANNEL_IN_MONO;
-    static final int audioEncoding = AudioFormat.ENCODING_PCM_16BIT;
-
-    private final int NUM_OF_MFCC = 12;
-    private final int NUM_OF_FILTER = 26;
-
     private double[][] firstMfcc;
     private double[][] secondMfcc;
+
+    ExecutorService executor = Executors.newCachedThreadPool();
 
     private AlertDialog alertDialog;
 
@@ -67,7 +54,7 @@ public class SetlockActivity extends Activity{
         super.onCreate(savedInstanceState);
         setContentView(R.layout.setlock);
 
-        recorder = new Recorder(frequency, channelConfiguration, audioEncoding);
+        recorder = Recorder.getInstance();
 
         vf = (ViewFlipper) findViewById(R.id.viewFlipper);
 
@@ -155,15 +142,10 @@ public class SetlockActivity extends Activity{
                     String strProcessing = getString(R.string.processing);
                     alertDialog.setMessage(strProcessing);
 
-                    ExecutorService executor = Executors.newCachedThreadPool();
-                    Future<double[][]> future = executor.submit(new DataProcess());//处理数据，获得第一个语音的mfcc参数
-
                     try {
-                        firstMfcc = future.get();
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    } catch (ExecutionException e) {
-                        e.printStackTrace();
+                        firstMfcc = DataProcess.getMfcc(recorder.getNormalizedData());
+                    } catch (Exception e) {
+                        Log.e("getMfcc", "error");
                     }
 
                     if (firstMfcc == null) {
@@ -202,14 +184,11 @@ public class SetlockActivity extends Activity{
                     String strProcessing = getString(R.string.processing);
                     alertDialog.setMessage(strProcessing);
 
-                    ExecutorService executor = Executors.newCachedThreadPool();
-                    Future<double[][]> future = executor.submit(new DataProcess());//处理数据，获得第二个语音的mfcc参数
+
 
                     try {
-                        secondMfcc = future.get();
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    } catch (ExecutionException e) {
+                        secondMfcc = DataProcess.getMfcc(recorder.getNormalizedData());
+                    } catch (Exception e) {
                         e.printStackTrace();
                     }
 
@@ -219,10 +198,9 @@ public class SetlockActivity extends Activity{
                         alertDialog.getButton(DialogInterface.BUTTON_POSITIVE).setEnabled(true);
 
                     } else {
-                        Future<Double> doubleFuture = executor.submit(new dtwCalcTask(firstMfcc, secondMfcc));
                         double dtwDis;
                         try {
-                            dtwDis = doubleFuture.get();
+                            dtwDis = DTWrecognize.dtw(firstMfcc, secondMfcc);
                             double meanErr = dtwDis * 2 / (secondMfcc.length + firstMfcc.length);
 //                            alertDialog.setMessage("dtw误差：" + dtwDis + '\n'
 //                                        + "帧数1：" + firstMfcc.length + '\n'
@@ -243,8 +221,6 @@ public class SetlockActivity extends Activity{
                             }
                         } catch (InterruptedException e) {
                             e.printStackTrace();
-                        } catch (ExecutionException e) {
-                            e.printStackTrace();
                         }
                     }
                 }
@@ -253,73 +229,6 @@ public class SetlockActivity extends Activity{
         });
     }
 
-    /**
-     * 获得mfcc参数
-     */
-    private class DataProcess implements Callable<double[][]> {
-
-        @Override
-        public double[][] call() throws Exception {
-            double[] nomalizeData = recorder.getNormalizedData();
-            //预加重信号
-            double[] preEmphasis = Preprocess.highpass(nomalizeData);
-            //短时能量和短时过零率
-            double[] stApm = Preprocess.shortTernEnergy(preEmphasis, frequency);
-            double[] stCZ = Preprocess.shortTernCZ(preEmphasis, frequency);
-            //端点检测
-            ArrayList<Integer> endPoints = null;
-            endPoints = Preprocess.divide(stApm, stCZ);
-
-            if (endPoints.size() < 2) {
-                return null;
-            }
-
-            ArrayList<double[]> speechFrames = new ArrayList<>();
-
-            for (int i = 0; i < endPoints.size(); i = i + 2){
-                for (int j = endPoints.get(i); j < endPoints.get(i + 1); ++j) {
-                    double[] frame = new double[512];
-                    System.arraycopy(preEmphasis, 256 * j, frame, 0, 512);
-                    Preprocess.hamming(frame);
-                    speechFrames.add(frame);
-                }
-            }
-
-            double[][] mfcc = new double[speechFrames.size()][NUM_OF_MFCC];
-            for (int i = 0; i < speechFrames.size(); ++i) {
-                double[] fftData = MFCC.rFFT(speechFrames.get(i), 512);
-                double[] mfccData = MFCC.mfcc(fftData, 512, NUM_OF_FILTER, NUM_OF_MFCC, frequency);
-                mfcc[i] = mfccData;
-            }
-            double[][] dtMfcc = MFCC.diff(mfcc, 2); //mfcc一阶差分参数
-            double[][] result = new double[speechFrames.size()][2 * NUM_OF_MFCC];
-            for (int i = 0; i < result.length; i++){ //合并mfcc和一阶差分参数
-                System.arraycopy(mfcc[i], 0, result[i], 0, NUM_OF_MFCC);
-                System.arraycopy(dtMfcc[i], 0, result[i], NUM_OF_MFCC, NUM_OF_MFCC);
-            }
-            return result;
-        }
-    }
-
-    /**
-     * 计算dtw距离
-     */
-    private class dtwCalcTask implements Callable<Double> {
-
-        private final double[][] first;
-        private final double[][] second;
-
-        public dtwCalcTask(double[][] first, double[][] second) {
-            this.first = first;
-            this.second = second;
-        }
-
-        @Override
-        public Double call() throws Exception {
-            double dtwDis = DTWrecognize.dtw(first, second);
-            return dtwDis;
-        }
-    }
 
     /**
      * 写入数据
