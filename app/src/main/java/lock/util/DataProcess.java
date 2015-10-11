@@ -1,5 +1,6 @@
 package lock.util;
 
+import com.example.eleven.speechlibrary.DTWrecognize;
 import com.example.eleven.speechlibrary.MFCC;
 import com.example.eleven.speechlibrary.Preprocess;
 import com.example.eleven.speechlibrary.Recorder;
@@ -12,10 +13,13 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 /**
- * 获得mfcc参数
+ * 数据处理类
  */
 public class DataProcess{
 
+    /**
+     * 获得mfcc参数
+     */
     public static double[][] getMfcc(double[] nomalizeData) throws Exception{
         ExecutorService executor = Executors.newCachedThreadPool();
         Future<double[][]> future = executor.submit(new calcMFCC(nomalizeData));
@@ -26,6 +30,13 @@ public class DataProcess{
         } catch (ExecutionException e) {
             throw e;
         }
+    }
+
+    /**
+     *计算DTW距离
+     */
+    public static double getDTW(double[][] mfcc1, double[][] mfcc2) {
+        return DTWrecognize.dtw(mfcc1, mfcc2);
     }
 
     private static class calcMFCC implements Callable<double[][]> {

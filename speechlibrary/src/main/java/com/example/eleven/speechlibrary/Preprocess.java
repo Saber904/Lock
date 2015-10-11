@@ -98,7 +98,7 @@ public class Preprocess {
 		int minLength = 18;
 		int maxSilence = 15;
 		
-		ArrayList<Integer> divPoints = new ArrayList<Integer>();
+		ArrayList<Integer> divPoints = new ArrayList<>();
 		
 		for (int i = 0; i < stEnergy.length; ++i) {
 			switch (status) {

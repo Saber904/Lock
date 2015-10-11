@@ -200,7 +200,7 @@ public class SetlockActivity extends Activity{
                     } else {
                         double dtwDis;
                         try {
-                            dtwDis = DTWrecognize.dtw(firstMfcc, secondMfcc);
+                            dtwDis = DataProcess.getDTW(firstMfcc, secondMfcc);
                             double meanErr = dtwDis * 2 / (secondMfcc.length + firstMfcc.length);
 //                            alertDialog.setMessage("dtw误差：" + dtwDis + '\n'
 //                                        + "帧数1：" + firstMfcc.length + '\n'

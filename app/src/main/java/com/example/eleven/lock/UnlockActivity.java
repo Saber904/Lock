@@ -123,9 +123,9 @@ public class UnlockActivity extends Activity {
                             alertDialog.setMessage("未能找到声音锁，请重新设置");
                             alertDialog.getButton(DialogInterface.BUTTON_POSITIVE).setEnabled(true);
                         } else {
-                            double dis1 = DTWrecognize.dtw(firstMfcc, inputMfcc);
+                            double dis1 = DataProcess.getDTW(firstMfcc, inputMfcc);
                             double meanErr1 = dis1 * 2 / (firstMfcc.length + inputMfcc.length);
-                            double dis2 = DTWrecognize.dtw(secondMfcc, inputMfcc);
+                            double dis2 = DataProcess.getDTW(secondMfcc, inputMfcc);
                             double meanErr2 = dis2 * 2 / (secondMfcc.length + inputMfcc.length);
 
                             if ((meanErr1 + meanErr2) / 2 > 45) {
